@@ -34,6 +34,11 @@ python3 -m sts serve          # opens http://127.0.0.1:8000
 4. **Read it now** — or download the `.sts` and open it in the **Read** tab on any machine
    (`python3 -m sts play book.sts` serves the reader only).
 
+Want to see the result before running a model? `examples/alice-in-wonderland.sts` is the whole of
+*Alice's Adventures in Wonderland* compiled with default settings (7 forks, 7 endings, ~16k
+generated words next to Carroll's 26k) — drop it on the **Read** tab, or
+`python3 -m sts play examples/alice-in-wonderland.sts`.
+
 Same thing from the command line:
 
 ```bash
