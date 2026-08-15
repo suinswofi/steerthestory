@@ -29,7 +29,8 @@ def _heading_family(line: str) -> str:
 
 
 def read_text(path: str) -> str:
-    raw = open(path, "rb").read()
+    with open(path, "rb") as f:
+        raw = f.read()
     for enc in ("utf-8-sig", "utf-8", "cp1252", "latin-1"):
         try:
             return raw.decode(enc)

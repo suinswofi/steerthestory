@@ -120,7 +120,7 @@ function render(animate = true) {
   // passage
   const p = $("#passage"); p.innerHTML = "";
   p.className = "passage" + (n.branch_id ? " detour" : "") + (showOrigin ? "" : " plain") + (animate ? " turn" : "");
-  for (const para of n.text.split(/\n\s*\n/)) { const t = para.trim(); if (t) p.append(el("p", {}, t.replace(/\n/g, " "))); }
+  for (const para of n.text.split(/\n\s*\n/)) { const t = para.trim(); if (t) p.append(paragraph(t)); }
   // choices
   const c = $("#choices"); c.innerHTML = "";
   if (isEnding) {
@@ -144,6 +144,19 @@ function render(animate = true) {
   drawRoute();
   window.scrollTo({ top: 0, behavior: animate ? "smooth" : "auto" });
 }
+// Gutenberg-style _underscores_ mark italics; render them as <em> without trusting any HTML.
+function paragraph(text) {
+  const p = el("p");
+  const lines = text.split("\n").map(l => l.trim()).filter(Boolean);
+  // Hard-wrapped prose (Gutenberg) is re-flowed; verse (short lines, capitalised starts) keeps its line breaks.
+  const isVerse = lines.length >= 2 && lines.every(l => l.length < 60) && lines.filter(l => /^["'“‘(]?[A-Z]/.test(l)).length >= lines.length * 0.8;
+  if (isVerse) p.classList.add("verse");
+  (isVerse ? lines : [lines.join(" ")]).forEach((line, li) => {
+    if (li) p.append(el("br"));
+    line.split(/_([^_]{1,200}?)_/g).forEach((part, i) => { if (part) p.append(i % 2 ? el("em", {}, part) : document.createTextNode(part)); });
+  });
+  return p;
+}
 function go(to) { if (!R.adv.nodes[to]) return; R.hist.push(R.cur); R.cur = to; render(true); }
 function back() { if (!R.hist.length) return; R.cur = R.hist.pop(); render(true); }
 function backToChoice() {
@@ -154,7 +167,7 @@ function restart() { R.hist = []; R.cur = R.adv.start; render(true); }
 
 // route strip: the book's spine with your position; a detour arcs above it.
 function drawRoute() {
-  const svg = $("#route"); const W = 1000, H = 44; svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+  const svg = $("#route"); const W = Math.max(300, svg.clientWidth || 600), H = 44; svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
   const N = R.canonOrder.length; if (!N) { svg.innerHTML = ""; return; }
   const x = i => 8 + (W - 16) * (N === 1 ? 0 : i / (N - 1)); const y = 30;
   const visited = new Set([...R.hist, R.cur].filter(id => R.canonPos[id] != null).map(id => R.canonPos[id]));
@@ -189,6 +202,7 @@ function drawRoute() {
   svg.innerHTML = s;
 }
 
+window.addEventListener("resize", () => { if (R.adv && !reader.hidden) drawRoute(); });
 $("#btn-back").addEventListener("click", back);
 $("#btn-restart").addEventListener("click", restart);
 $("#btn-close").addEventListener("click", closeBook);
@@ -204,7 +218,7 @@ document.addEventListener("keydown", e => {
 function wireDrop(zone, onFile) {
   ["dragenter", "dragover"].forEach(t => zone.addEventListener(t, e => { e.preventDefault(); zone.classList.add("over"); }));
   ["dragleave", "drop"].forEach(t => zone.addEventListener(t, e => { e.preventDefault(); zone.classList.remove("over"); }));
-  zone.addEventListener("drop", e => { const f = e.dataTransfer.files && e.dataTransfer.files[0]; if (f) onFile(f); });
+  zone.addEventListener("drop", e => { e.stopPropagation(); const f = e.dataTransfer.files && e.dataTransfer.files[0]; if (f) onFile(f); });
 }
 async function loadStsFile(f) {
   try { openAdventure(await readAdventureFile(f), f.name); }
@@ -329,10 +343,16 @@ async function refreshStatus() {
   } catch (e) { $("#top-right").textContent = "server unreachable"; }
 }
 
+window.__sts = { uploadBook, watchJob, jobCard, openFromLibrary, refreshStatus, openAdventure };  // for tests/automation
+
 // ------------------------------------------------------------------ boot
 (async () => {
   if (!served) { $("#tab-compile").hidden = true; $("#top-right").textContent = "reading only (open via sts serve to make adventures)"; }
-  await refreshStatus();
   showTab(location.hash.slice(1) || "play");
+  if (window.__STS_PRELOAD) { try { openAdventure(window.__STS_PRELOAD, "preload"); } catch (e) { console.error(e); } }
+  await refreshStatus();
+  const q = new URLSearchParams(location.search).get("open");
+  if (q && served && !R.adv) openFromLibrary(q);
+  else showTab(location.hash.slice(1) || "play");
 })();
 })();
