@@ -69,8 +69,8 @@ def design_choice(client: ChatClient, bible: dict[str, Any], running_before: str
             alts.append({"label": _clean_label(str(a["label"])), "premise": str(a.get("premise") or a["label"]).strip()})
         elif isinstance(a, str) and a.strip():
             alts.append({"label": _clean_label(a), "premise": a.strip()})
-    if len(alts) < n_alts:
-        raise LLMBadJSON(f"expected {n_alts} alternatives, got {len(alts)}")
+    if not alts:
+        raise LLMBadJSON("no usable alternatives")
     return {
         "question": str(data.get("question") or f"What does {bible.get('protagonist', 'the protagonist')} do?").strip(),
         "canon_label": _clean_label(str(data.get("canon_label") or "Continue as in the book")),

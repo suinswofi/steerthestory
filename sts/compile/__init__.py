@@ -138,6 +138,9 @@ def compile_book(book: Book, cfg: CompileConfig, client: ChatClient, *,
         design_ = cp.state["choices"].get(str(plan.scene_index))
         if not design_ or design_.get("skipped"):
             return
+        if alt.index >= len(design_["alternatives"]):
+            bump("", n=cfg.branch_len)  # model offered fewer alternatives than asked
+            return
         bid = branch_id(plan, alt)
         with cp.lock:
             brec = cp.state["branches"].setdefault(bid, {"nodes": [], "done": False})
@@ -200,6 +203,9 @@ def _count_done_units(cp: Checkpoint, plans: list[ChoicePlan], cfg: CompileConfi
             n += len(p.alts) * cfg.branch_len
             continue
         for alt in p.alts:
+            if alt.index >= len(d.get("alternatives", [])):
+                n += cfg.branch_len
+                continue
             b = cp.state["branches"].get(branch_id(p, alt))
             if b:
                 n += cfg.branch_len if b.get("done") else len(b["nodes"])
@@ -228,6 +234,8 @@ def assemble(book: Book, cfg: CompileConfig, scenes: list[Scene], plans: list[Ch
             if design and not design.get("skipped"):
                 options: list[Choice] = [Choice(design["canon_label"], nxt, canon=True)]
                 for alt in plan.alts:
+                    if alt.index >= len(design["alternatives"]):
+                        continue
                     bid = branch_id(plan, alt)
                     brec = cp.state["branches"].get(bid, {"nodes": []})
                     bnodes = brec["nodes"]
