@@ -111,7 +111,9 @@ Return JSON: {{"running_summary": "..."}}"""
 def choice_prompt(bible: dict[str, Any], running_summary_before: str, scene_text: str,
                   next_scene_summary: str, n_alternatives: int) -> list[dict[str, str]]:
     prot = bible.get("protagonist") or "the protagonist"
-    user = f"""We are turning a novel into an interactive story where the reader steers {prot}.
+    user = f"""We are turning a novel into an interactive story where the reader steers the viewpoint character
+(usually {prot}; if the current scene follows someone else — a different narrator, letter-writer or
+point-of-view character — the choice is about THAT character instead).
 
 WHAT WE KNOW:
 {bible_block(bible)}
@@ -127,17 +129,17 @@ CURRENT SCENE (the reader has just finished reading this):
 WHAT ACTUALLY HAPPENS NEXT IN THE BOOK:
 {next_scene_summary}
 
-At the end of the current scene, {prot} faces a decision. Design a choice with {n_alternatives + 1} options:
+At the end of the current scene, the viewpoint character faces a decision. Design a choice with {n_alternatives + 1} options:
 option 1 leads to what actually happens next in the book; the other {n_alternatives} are tempting, in-character
 alternatives that would send the story in a different direction. Alternatives must be plausible for
 this character and setting (no anachronisms, no magic unless the book has it). Labels must be short
-imperative-style phrases about {prot}'s next action, all in the same grammatical form, and must not
-reveal what happens afterwards.
+imperative-style phrases about the character's next action, all in the same grammatical form, and
+must not reveal what happens afterwards.
 
 Return JSON with exactly these keys:
-- "question": one short question shown to the reader, e.g. "What does {prot} do?"
+- "question": one short question shown to the reader naming the character, e.g. "What does {prot} do?"
 - "canon_label": label for the option that follows the book (max 12 words)
-- "alternatives": list of {n_alternatives} objects {{"label": <max 12 words>, "premise": <1-2 sentences describing what happens if {prot} does this>}}"""
+- "alternatives": list of {n_alternatives} objects {{"label": <max 12 words>, "premise": <1-2 sentences describing what happens if the character does this>}}"""
     return [{"role": "system", "content": SYSTEM_ANALYST}, {"role": "user", "content": user}]
 
 
@@ -159,7 +161,8 @@ def branch_scene_prompt(style_guide: str, bible: dict[str, Any], running_summary
         parts.append(f"PREVIOUS SCENE OF THIS NEW STORYLINE:\n\"\"\"\n{prev_scene}\n\"\"\"")
     task = [f"Write scene {step} of {total_steps} of this new storyline, about {target_words} words."]
     if step == 1:
-        task.append("Begin right where the last scene ended and show " + prot + " taking the chosen course of action.")
+        task.append("Begin right where the last scene ended and show the viewpoint character of that scene "
+                    f"(usually {prot}) taking the chosen course of action.")
     if step == total_steps and ending:
         task.append("This is the FINAL scene: bring the story to a definite, satisfying or tragic conclusion "
                     "in keeping with the book's tone. Do not leave the plot open.")
