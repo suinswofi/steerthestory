@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "steerthestory"
+version = "0.1.0"
+description = "Steer The Story (STS): turn any DRM-free book into a choose-your-own-adventure game using your own OpenAI-compatible LLM."
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+dependencies = []
+
+[project.optional-dependencies]
+mobi = ["mobi"]
+
+[project.scripts]
+sts = "sts.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["sts*"]
+
+[tool.setuptools.package-data]
+sts = ["web/*"]
