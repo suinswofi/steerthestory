@@ -37,7 +37,9 @@ python3 -m sts serve          # opens http://127.0.0.1:8000
 Want to see the result before running a model? `examples/alice-in-wonderland.sts` is the whole of
 *Alice's Adventures in Wonderland* compiled with default settings (7 forks, 7 endings, ~16k
 generated words next to Carroll's 26k) — drop it on the **Read** tab, or
-`python3 -m sts play examples/alice-in-wonderland.sts`.
+`python3 -m sts play examples/alice-in-wonderland.sts`. `examples/dracula.sts.gz` is the whole of
+*Dracula* (161k words → 433 nodes, 48 forks, 24 endings, 105k generated words; 495 model calls,
+42 minutes with 6 parallel requests to a hosted model).
 
 Same thing from the command line:
 
@@ -100,9 +102,10 @@ into nonsense. STS keeps the book as the spine; detours are short and are told w
 land, so the whole adventure is roughly 2–4× the book and stays coherent. A configurable share of
 detours end the story instead (alternate endings), so choices carry real weight.
 
-**Cost.** For a 100k‑word novel with defaults: ~145 scenes, ~48 choice points, ~96 detours →
-~480 model calls, ~200k output tokens. Minutes on a hosted API with `--concurrency 8`; a few
-hours on a local 8B model. Use `--dry-run` (or the estimate in the UI) before you start, and
+**Cost.** Measured on *Dracula* (161k words) with defaults: 145 scenes, 48 choice points, 96
+detours → 495 model calls, 1.08M prompt tokens in, 240k tokens out; 42 minutes against a hosted
+model with `--concurrency 6` (the scene‑analysis pass is sequential, everything after it is
+parallel). Expect a few hours on a local 8B model. Use `--dry-run` (or the estimate in the UI) before you start, and
 `--chapters 1-3` for a quick taste.
 
 ## Design decisions
