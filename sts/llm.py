@@ -2,7 +2,9 @@
 from __future__ import annotations
 
 import json
+import os
 import re
+import threading
 import time
 import urllib.error
 import urllib.request
@@ -170,6 +172,7 @@ class OpenAIClient:
                     if "error" in data:
                         raise LLMError(f"API error: {data['error']}") from e
                     raise LLMError(f"unexpected response shape: {str(data)[:300]}") from e
+                _debug_log(messages, content, dt)
                 u = data.get("usage") or {}
                 self.usage.add(Usage(
                     calls=1,
@@ -251,6 +254,20 @@ class OpenAIClient:
     def _log(self, msg: str) -> None:
         if self.log:
             self.log(msg)
+
+
+_debug_lock = threading.Lock()
+
+
+def _debug_log(messages: list[dict[str, str]], reply: str, seconds: float) -> None:
+    """Append every prompt/reply pair as JSON lines to $STS_LLM_LOG (for diagnosing a model)."""
+    path = os.environ.get("STS_LLM_LOG")
+    if not path:
+        return
+    rec = {"t": time.time(), "seconds": round(seconds, 2), "messages": messages, "reply": reply}
+    with _debug_lock:
+        with open(path, "a", encoding="utf-8") as f:
+            f.write(json.dumps(rec, ensure_ascii=False) + "\n")
 
 
 def _check_required(obj: Any, required: tuple[str, ...]) -> None:

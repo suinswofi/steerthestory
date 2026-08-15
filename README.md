@@ -168,6 +168,9 @@ book's scenes, `bNNN-k-s` for scene *s* of detour *k* leaving scene *NNN*.
   that answers via the `claude` CLI, so `--base-url http://localhost:8765/v1` lets you try STS with
   a strong model before you have a local one running.
 
+- `STS_LLM_LOG=llm.jsonl python3 -m sts compile …` records every prompt and reply (JSON lines) —
+  handy when a small model misbehaves.
+
 Public‑domain books from [Project Gutenberg](https://www.gutenberg.org/) are perfect test material.
 
 ## Limitations & notes
