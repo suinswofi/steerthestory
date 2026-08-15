@@ -98,16 +98,22 @@ def cmd_compile(args: argparse.Namespace) -> int:
     last = {"line": "", "t": 0.0}
     t0 = time.time()
 
+    phase_start = {"phase": "", "t": t0, "done0": 0}
+
     def progress(phase: str, done: int, total: int, msg: str) -> None:
         now = time.time()
+        if phase != phase_start["phase"]:  # ETA is estimated per phase, from where this run picked up
+            phase_start.update(phase=phase, t=now, done0=done)
         if msg == last["line"] and now - last["t"] < 1:
             return
         last["line"], last["t"] = msg, now
         pct = f"{100 * done // max(1, total):3d}%"
-        elapsed = now - t0
+        elapsed = now - phase_start["t"]
+        advanced = done - phase_start["done0"]
         eta = ""
-        if done and phase in ("analyse", "branch") and total > done:
-            eta = f"  ETA {int(elapsed / done * (total - done))//60}m"
+        if advanced > 0 and phase in ("analyse", "branch") and total > done and elapsed > 5:
+            secs = int(elapsed / advanced * (total - done))
+            eta = f"  ETA {secs // 60}m{secs % 60:02d}s"
         print(f"[{phase:7s} {pct}] {msg}{eta}", file=sys.stderr)
 
     checkpoint = out + ".partial.json"
