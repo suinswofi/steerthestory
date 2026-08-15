@@ -153,7 +153,10 @@ function paragraph(text) {
   if (isVerse) p.classList.add("verse");
   (isVerse ? lines : [lines.join(" ")]).forEach((line, li) => {
     if (li) p.append(el("br"));
-    line.split(/_([^_]{1,200}?)_/g).forEach((part, i) => { if (part) p.append(i % 2 ? el("em", {}, part) : document.createTextNode(part)); });
+    // _underscores_ (Gutenberg) and *asterisks* (models) both mean italics
+    let last = 0; const re = /_([^_\n]{1,200}?)_|\*([^*\n]{1,200}?)\*/g; let m;
+    while ((m = re.exec(line))) { if (m.index > last) p.append(document.createTextNode(line.slice(last, m.index))); p.append(el("em", {}, m[1] || m[2])); last = re.lastIndex; }
+    if (last < line.length) p.append(document.createTextNode(line.slice(last)));
   });
   return p;
 }
