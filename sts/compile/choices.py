@@ -61,7 +61,7 @@ def design_choice(client: ChatClient, bible: dict[str, Any], running_before: str
                   next_summary: str, n_alts: int) -> dict[str, Any]:
     """Ask the model for the question, canon label and alternative premises. Raises LLMBadJSON."""
     data = client.chat_json(choice_prompt(bible, running_before, scene.text, next_summary, n_alts),
-                            max_tokens=600, required=("question", "canon_label", "alternatives"))
+                            max_tokens=800, required=("question", "canon_label", "alternatives"))
     alts_raw = data.get("alternatives") or []
     alts: list[dict[str, str]] = []
     for a in alts_raw:

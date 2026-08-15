@@ -76,22 +76,55 @@ def extract_json(text: str) -> Any:
             return json.loads(cand)
         except json.JSONDecodeError:
             pass
-    # Find the outermost {...} or [...]
-    for open_c, close_c in (("{", "}"), ("[", "]")):
+    # Find the outermost {...} (or [...] if the reply starts with an array)
+    brackets = [("{", "}"), ("[", "]")]
+    if text.find("[") != -1 and (text.find("{") == -1 or text.find("[") < text.find("{")):
+        brackets.reverse()
+    for open_c, close_c in brackets:
         start = text.find(open_c)
         end = text.rfind(close_c)
         if start != -1 and end > start:
             chunk = text[start:end + 1]
-            try:
-                return json.loads(chunk)
-            except json.JSONDecodeError:
-                # Try trimming trailing commas which small models love to emit
-                fixed = re.sub(r",\s*([}\]])", r"\1", chunk)
+            for cand in (chunk, re.sub(r",\s*([}\]])", r"\1", chunk), _repair_quotes(chunk)):
                 try:
-                    return json.loads(fixed)
+                    return json.loads(cand)
                 except json.JSONDecodeError:
                     continue
     raise LLMBadJSON("no JSON object found in reply: " + text[:200].replace("\n", " "))
+
+
+def _repair_quotes(chunk: str) -> str:
+    """Escape unescaped double quotes inside JSON strings (a common model slip:
+    "summary": "he said "no" and left"). Structural quotes are followed by , : } ] or preceded by : , { [."""
+    out: list[str] = []
+    in_str = False
+    i = 0
+    n = len(chunk)
+    while i < n:
+        c = chunk[i]
+        if not in_str:
+            if c == '"':
+                in_str = True
+            out.append(c)
+        else:
+            if c == "\\":
+                out.append(c)
+                if i + 1 < n:
+                    out.append(chunk[i + 1])
+                    i += 1
+            elif c == '"':
+                j = i + 1
+                while j < n and chunk[j] in " \t\r\n":
+                    j += 1
+                if j >= n or chunk[j] in ",:}]":
+                    in_str = False
+                    out.append(c)
+                else:
+                    out.append('\\"')
+            else:
+                out.append(c)
+        i += 1
+    return "".join(out)
 
 
 @dataclass

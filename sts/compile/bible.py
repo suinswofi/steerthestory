@@ -64,7 +64,7 @@ def run_setup(client: ChatClient, scenes: list[Scene], title: str, author: str) 
     if len(scenes) > 1 and estimate_tokens(opening) < 1200:
         opening = opening + "\n\n" + scenes[1].text
     opening = _clip_words(opening, 1500)
-    data = client.chat_json(setup_prompt(title, author, opening), max_tokens=700,
+    data = client.chat_json(setup_prompt(title, author, opening), max_tokens=900,
                             required=("protagonist", "pov"))
     setup = {
         "protagonist": str(data.get("protagonist") or "the protagonist"),
@@ -143,7 +143,7 @@ def run_bible_pass(client: ChatClient, scenes: list[Scene], setup: dict[str, Any
         progress(i, len(scenes), f"analysing scene {i + 1}/{len(scenes)} (chapter {sc.chapter})")
         try:
             data = client.chat_json(scene_prompt(bible, running, sc.text, i + 1, len(scenes)),
-                                    max_tokens=700, required=("scene_summary", "running_summary"))
+                                    max_tokens=1000, required=("scene_summary", "running_summary"))
         except LLMBadJSON as e:
             log(f"scene {i + 1}: model failed to produce JSON twice ({e}); using fallback summary")
             data = {"scene_summary": _clip_words(sc.text, 60), "running_summary": running}
