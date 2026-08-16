@@ -50,6 +50,43 @@ class IngestTests(unittest.TestCase):
         self.assertEqual(t.strip(), "body")
 
 
+class MobiSplitTests(unittest.TestCase):
+    """The MOBI7 path splits mobi.extract's book.html on toc.ncx anchors (no `mobi` package needed here)."""
+
+    def test_split_by_toc_and_drop_front_matter(self):
+        import tempfile
+        from sts.ingest.mobi import _ncx_points, _split_html_by_toc, _drop_non_story, _opf_meta
+        body = " ".join(["word"] * 60)
+        html = ('<html><body><a id="filepos1" /><h1>Title Page</h1><p>My Book</p>'
+                '<a id="filepos2" /><h1>Contents</h1><p>Chapter 1 Chapter 2</p>'
+                f'<a id="filepos3" /><h1>1</h1><p>{body}</p>'
+                f'<a id="filepos4" /><h1>2</h1><p>{body} end</p></body></html>')
+        ncx = ('<?xml version="1.0"?><ncx xmlns="http://www.daisy.org/z3986/2005/ncx/"><navMap>'
+               + "".join(f'<navPoint id="n{i}" playOrder="{i}"><navLabel><text>{lab}</text></navLabel>'
+                         f'<content src="book.html#filepos{i}"/></navPoint>'
+                         for i, lab in enumerate(["Title Page", "Contents", "Chapter 1", "Chapter 2"], 1))
+               + '</navMap></ncx>')
+        opf = ('<?xml version="1.0"?><package xmlns="http://www.idpf.org/2007/opf"><metadata '
+               'xmlns:dc="http://purl.org/dc/elements/1.1/"><dc:title>My Book</dc:title>'
+               '<dc:creator>Someone</dc:creator></metadata></package>')
+        with tempfile.TemporaryDirectory() as d:
+            for name, content in (("toc.ncx", ncx), ("content.opf", opf)):
+                with open(os.path.join(d, name), "w") as f:
+                    f.write(content)
+            points = _ncx_points(os.path.join(d, "toc.ncx"))
+            meta = _opf_meta(os.path.join(d, "content.opf"))
+        self.assertEqual([p[0] for p in points], ["Title Page", "Contents", "Chapter 1", "Chapter 2"])
+        self.assertEqual(meta["title"], "My Book")
+        self.assertEqual(meta["creator"], "Someone")
+        chapters = _split_html_by_toc(html, points)
+        self.assertEqual([c.title for c in chapters], ["Title Page", "Contents", "Chapter 1", "Chapter 2"])
+        self.assertFalse(chapters[2].text.startswith("1"))  # duplicate bare heading stripped
+        self.assertTrue(chapters[3].text.endswith("end"))
+        kept, skipped = _drop_non_story(chapters * 20)  # enough words to allow dropping
+        self.assertEqual(sorted(set(skipped)), ["Contents", "Title Page"])
+        self.assertTrue(all(c.title.startswith("Chapter") for c in kept))
+
+
 class SegmentTests(unittest.TestCase):
     def test_segments_respect_size_and_chapters(self):
         b = load_book(os.path.join(FIX, "mini.txt"))
