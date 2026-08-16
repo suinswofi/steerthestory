@@ -200,7 +200,7 @@ sts/compile/    bible.py (pass 1), choices.py (pass 2), branches.py (pass 3), ch
 sts/prompts.py  every prompt template
 sts/llm.py      OpenAI-compatible client (urllib), JSON parsing, probe
 sts/adventure.py .sts schema, validation, load/save
-sts/server.py   web app backend      sts/web/  index.html, app.js, style.css
+sts/server.py   web app backend      sts/web/  index.html (single file: markup, CSS, JS)
 sts/testing/    fake_llm.py, claude_shim.py     tests/  unittest suite
 ```
 
