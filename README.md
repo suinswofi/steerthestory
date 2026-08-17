@@ -204,4 +204,5 @@ sts/server.py   web app backend      sts/web/  index.html (single file: markup, 
 sts/testing/    fake_llm.py, claude_shim.py     tests/  unittest suite
 ```
 
-MIT licensed.
+Licensed under the [PolyForm Noncommercial License 1.0.0](LICENSE.md) — free for personal, research,
+and other noncommercial use; commercial use requires a separate license from the author.
